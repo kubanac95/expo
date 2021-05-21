@@ -14,14 +14,20 @@ import com.raizlabs.android.dbflow.structure.BaseModel;
 
 import org.joda.time.DateTime;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import expo.modules.updates.manifest.ManifestFactory;
+import expo.modules.updates.manifest.raw.RawManifest;
+import host.exp.exponent.kernel.ExperienceKey;
 import host.exp.exponent.notifications.helpers.ExpoCronDefinitionBuilder;
 import host.exp.exponent.notifications.managers.SchedulersManagerProxy;
 import host.exp.exponent.notifications.managers.SchedulersDatabase;
+import host.exp.exponent.storage.ExperienceDBObject;
+import host.exp.exponent.storage.ExponentDB;
 
 @Table(database = SchedulersDatabase.class)
 public class CalendarSchedulerModel extends BaseModel implements SchedulerModel {
@@ -63,8 +69,24 @@ public class CalendarSchedulerModel extends BaseModel implements SchedulerModel 
   }
 
   @Override
-  public String getOwnerExperienceId() {
-    return experienceId;
+  public ExperienceKey getOwnerExperienceKey() {
+    ExperienceKey experienceKey = null;
+
+    ExperienceDBObject foreignExperience = ExponentDB.experienceIdToExperienceSync(experienceId);
+    if (foreignExperience != null) {
+      try {
+        RawManifest manifest = ManifestFactory.INSTANCE.getRawManifestFromJson(new JSONObject(foreignExperience.manifest));
+        experienceKey = ExperienceKey.Companion.fromRawManifest(manifest);
+      } catch (JSONException e) {
+        // fall through to fallback experienceKey construction below
+      }
+    }
+
+    // fallback experienceKey
+    if (experienceKey == null) {
+      experienceKey = new ExperienceKey(experienceId, experienceId, experienceId);
+    }
+    return experienceKey;
   }
 
   @Override

@@ -531,7 +531,26 @@ public class Kernel extends KernelInterface {
           if (bundle.containsKey(KernelConstants.NOTIFICATION_ACTION_TYPE_KEY)) {
             exponentNotification.setActionType(bundle.getString(KernelConstants.NOTIFICATION_ACTION_TYPE_KEY));
             ExponentNotificationManager manager = new ExponentNotificationManager(mContext);
-            manager.cancel(exponentNotification.experienceId, exponentNotification.notificationId);
+            String notificationExperienceId = exponentNotification.experienceId;
+
+            ExperienceKey experienceKey = null;
+
+            ExperienceDBObject experience = ExponentDB.experienceIdToExperienceSync(notificationExperienceId);
+            if (experience != null) {
+              try {
+                RawManifest manifest = ManifestFactory.INSTANCE.getRawManifestFromJson(new JSONObject(experience.manifest));
+                experienceKey = ExperienceKey.Companion.fromRawManifest(manifest);
+              } catch (JSONException e) {
+                // fall through to fallback experienceKey construction below
+              }
+            }
+
+            // fallback experienceKey
+            if (experienceKey == null) {
+              experienceKey = new ExperienceKey(notificationExperienceId, notificationExperienceId, notificationExperienceId);
+            }
+
+            manager.cancel(experienceKey, exponentNotification.notificationId);
           }
           // Add remote input
           Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);

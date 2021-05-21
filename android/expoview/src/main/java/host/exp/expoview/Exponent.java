@@ -249,16 +249,11 @@ public class Exponent {
     return URLEncoder.encode("experience-" + manifestId, "UTF-8");
   }
 
-
-
-
-
   /*
    *
    * Bundle loading
    *
    */
-
   public interface BundleListener {
     void onBundleLoaded(String localBundlePath);
 

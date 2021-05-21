@@ -11,6 +11,18 @@ abstract class BaseLegacyRawManifest(json: JSONObject) : RawManifest(json) {
     getLegacyID()
   }
 
+  override fun getScopeKey(): String = if (json.has("scopeKey")) {
+    json.getString("scopeKey")
+  } else {
+    getStableLegacyID()
+  }
+
+  override fun getProjectID(): String? = if (json.has("projectId")) {
+    json.optString("projectId")
+  } else {
+    null
+  }
+
   fun getMetadata(): JSONObject? = json.optJSONObject("metadata")
   override fun getAssets(): JSONArray? = json.optJSONArray("assets")
 

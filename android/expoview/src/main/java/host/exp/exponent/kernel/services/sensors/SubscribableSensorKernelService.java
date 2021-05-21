@@ -12,14 +12,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import host.exp.exponent.kernel.ExperienceId;
+import host.exp.exponent.kernel.ExperienceKey;
 
 public abstract class SubscribableSensorKernelService extends BaseSensorKernelService {
   protected static int DEFAULT_UPDATE_INTERVAL = 100;
 
-  private Map<ExperienceId, Integer> mExperienceIdListenersCountMap = new HashMap<>();
+  private Map<ExperienceKey, Integer> mExperienceKeyListenersCountMap = new HashMap<>();
   private Map<SensorKernelServiceSubscription, Long> mSensorEventListenerLastUpdateMap = new WeakHashMap<>();
-  private Map<ExperienceId, List<WeakReference<SensorKernelServiceSubscription>>> mExperienceIdSubscriptionsMap = new HashMap<>();
+  private Map<ExperienceKey, List<WeakReference<SensorKernelServiceSubscription>>> mExperienceKeySubscriptionsMap = new HashMap<>();
 
   SubscribableSensorKernelService(Context reactContext) {
     super(reactContext);
@@ -27,11 +27,11 @@ public abstract class SubscribableSensorKernelService extends BaseSensorKernelSe
 
   // BaseKernelService
 
-  public void onExperienceForegrounded(ExperienceId experienceId) {
+  public void onExperienceForegrounded(ExperienceKey experienceKey) {
     updateObserving();
   }
 
-  public void onExperienceBackgrounded(ExperienceId experienceId) {
+  public void onExperienceBackgrounded(ExperienceKey experienceKey) {
     updateObserving();
   }
 
@@ -40,8 +40,8 @@ public abstract class SubscribableSensorKernelService extends BaseSensorKernelSe
   @Override
   public void onSensorDataChanged(SensorEvent sensorEvent) {
     long currentTime = System.currentTimeMillis();
-    ExperienceId currentExperienceId = getCurrentExperienceId();
-    List<WeakReference<SensorKernelServiceSubscription>> listeners = mExperienceIdSubscriptionsMap.get(currentExperienceId);
+    ExperienceKey currentExperienceKey = getCurrentExperienceKey();
+    List<WeakReference<SensorKernelServiceSubscription>> listeners = mExperienceKeySubscriptionsMap.get(currentExperienceKey);
 
     if (listeners != null) {
       for(WeakReference<SensorKernelServiceSubscription> weakReference : listeners) {
@@ -69,20 +69,20 @@ public abstract class SubscribableSensorKernelService extends BaseSensorKernelSe
 
   // Modules API
 
-  public SensorKernelServiceSubscription createSubscriptionForListener(ExperienceId experienceId, SensorEventListener listener) {
-    SensorKernelServiceSubscription sensorKernelServiceSubscription = new SensorKernelServiceSubscription(experienceId, this, listener);
-    if (!mExperienceIdSubscriptionsMap.containsKey(experienceId)) {
-      mExperienceIdSubscriptionsMap.put(experienceId, new ArrayList<WeakReference<SensorKernelServiceSubscription>>());
+  public SensorKernelServiceSubscription createSubscriptionForListener(ExperienceKey experienceKey, SensorEventListener listener) {
+    SensorKernelServiceSubscription sensorKernelServiceSubscription = new SensorKernelServiceSubscription(experienceKey, this, listener);
+    if (!mExperienceKeySubscriptionsMap.containsKey(experienceKey)) {
+      mExperienceKeySubscriptionsMap.put(experienceKey, new ArrayList<WeakReference<SensorKernelServiceSubscription>>());
     }
-    mExperienceIdSubscriptionsMap.get(experienceId).add(new WeakReference<>(sensorKernelServiceSubscription));
+    mExperienceKeySubscriptionsMap.get(experienceKey).add(new WeakReference<>(sensorKernelServiceSubscription));
     return sensorKernelServiceSubscription;
   }
 
   public void removeSubscription(SensorKernelServiceSubscription subscriptionToRemove) {
     mSensorEventListenerLastUpdateMap.remove(subscriptionToRemove);
-    ExperienceId experienceId = subscriptionToRemove.getExperienceId();
-    if (mExperienceIdSubscriptionsMap.containsKey(experienceId)) {
-      List<WeakReference<SensorKernelServiceSubscription>> originalSubscriptions = mExperienceIdSubscriptionsMap.get(experienceId);
+    ExperienceKey experienceKey = subscriptionToRemove.getExperienceKey();
+    if (mExperienceKeySubscriptionsMap.containsKey(experienceKey)) {
+      List<WeakReference<SensorKernelServiceSubscription>> originalSubscriptions = mExperienceKeySubscriptionsMap.get(experienceKey);
       List<WeakReference<SensorKernelServiceSubscription>> leftSubscriptions = new ArrayList<>();
       for (WeakReference<SensorKernelServiceSubscription> subscriptionWeakReference : originalSubscriptions) {
         SensorKernelServiceSubscription subscription = subscriptionWeakReference.get();
@@ -91,9 +91,9 @@ public abstract class SubscribableSensorKernelService extends BaseSensorKernelSe
         }
       }
       if (leftSubscriptions.size() > 0) {
-        mExperienceIdSubscriptionsMap.put(experienceId, leftSubscriptions);
+        mExperienceKeySubscriptionsMap.put(experienceKey, leftSubscriptions);
       } else {
-        mExperienceIdSubscriptionsMap.remove(experienceId);
+        mExperienceKeySubscriptionsMap.remove(experienceKey);
       }
     }
   }
@@ -101,17 +101,17 @@ public abstract class SubscribableSensorKernelService extends BaseSensorKernelSe
   // SensorKernelServiceSubscription API
 
   void onSubscriptionEnabledChanged(SensorKernelServiceSubscription sensorKernelServiceSubscription) {
-    ExperienceId experienceId = sensorKernelServiceSubscription.getExperienceId();
-    int enabledListenersCount = getEnabledListenersForExperienceId(experienceId);
+    ExperienceKey experienceKey = sensorKernelServiceSubscription.getExperienceKey();
+    int enabledListenersCount = getEnabledListenersForExperienceKey(experienceKey);
 
     if (sensorKernelServiceSubscription.isEnabled()) {
-      mExperienceIdListenersCountMap.put(experienceId, enabledListenersCount + 1);
+      mExperienceKeyListenersCountMap.put(experienceKey, enabledListenersCount + 1);
     } else {
-      mExperienceIdListenersCountMap.put(experienceId, enabledListenersCount - 1);
+      mExperienceKeyListenersCountMap.put(experienceKey, enabledListenersCount - 1);
     }
 
-    if (getEnabledListenersForExperienceId(experienceId) == 0) {
-      mExperienceIdListenersCountMap.remove(experienceId);
+    if (getEnabledListenersForExperienceKey(experienceKey) == 0) {
+      mExperienceKeyListenersCountMap.remove(experienceKey);
     }
 
     updateObserving();
@@ -128,16 +128,16 @@ public abstract class SubscribableSensorKernelService extends BaseSensorKernelSe
 
   // Private helpers
 
-  private int getEnabledListenersForExperienceId(ExperienceId experienceId) {
-    if (mExperienceIdListenersCountMap.containsKey(experienceId)) {
-      return mExperienceIdListenersCountMap.get(experienceId);
+  private int getEnabledListenersForExperienceKey(ExperienceKey experienceKey) {
+    if (mExperienceKeyListenersCountMap.containsKey(experienceKey)) {
+      return mExperienceKeyListenersCountMap.get(experienceKey);
     }
 
     return 0;
   }
 
-  private void cleanWeakSubscriptionsList(ExperienceId experienceId) {
-    List<WeakReference<SensorKernelServiceSubscription>> listeners = mExperienceIdSubscriptionsMap.get(experienceId);
+  private void cleanWeakSubscriptionsList(ExperienceKey experienceKey) {
+    List<WeakReference<SensorKernelServiceSubscription>> listeners = mExperienceKeySubscriptionsMap.get(experienceKey);
     List<WeakReference<SensorKernelServiceSubscription>> realListeners = new ArrayList<>();
     if (listeners != null) {
       for (WeakReference<SensorKernelServiceSubscription> subscriptionWeakReference : listeners) {
@@ -148,18 +148,18 @@ public abstract class SubscribableSensorKernelService extends BaseSensorKernelSe
     }
 
     if (realListeners.size() > 0) {
-      mExperienceIdSubscriptionsMap.put(experienceId, realListeners);
+      mExperienceKeySubscriptionsMap.put(experienceKey, realListeners);
     } else {
-      mExperienceIdSubscriptionsMap.remove(experienceId);
+      mExperienceKeySubscriptionsMap.remove(experienceKey);
     }
   }
 
   private void updateObserving() {
-    ExperienceId currentExperienceId = getCurrentExperienceId();
-    cleanWeakSubscriptionsList(currentExperienceId);
+    ExperienceKey currentExperienceKey = getCurrentExperienceKey();
+    cleanWeakSubscriptionsList(currentExperienceKey);
 
     // Start/stop observing according to the experience state
-    if (getEnabledListenersForExperienceId(currentExperienceId) > 0) {
+    if (getEnabledListenersForExperienceKey(currentExperienceKey) > 0) {
       super.startObserving();
     } else {
       super.stopObserving();

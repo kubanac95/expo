@@ -19,6 +19,19 @@ class NewRawManifest(json: JSONObject) : RawManifest(json) {
   @Throws(JSONException::class)
   override fun getStableLegacyID(): String = getID()
 
+  /**
+   * Incorrect for now until we figure out how to get this in the new manifest format.
+   */
+  @Throws(JSONException::class)
+  override fun getScopeKey(): String = getID()
+
+  /**
+   * Incorrect for now until we figure out how to get this in the new manifest format.
+   */
+  override fun getProjectID(): String? {
+    return null
+  }
+
   @Throws(JSONException::class)
   fun getRuntimeVersion(): String = json.getString("runtimeVersion")
 

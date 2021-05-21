@@ -44,13 +44,14 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import host.exp.exponent.experience.ExperienceActivity;
+import host.exp.exponent.kernel.ExperienceKey;
 
 public class PedometerModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
   private static String TAG = "PedometerModule";
   private @Nullable GoogleApiClient mClient;
   private @Nullable OnDataPointListener mListener;
   private int mWatchTotalSteps = 0;
-  private static Map<String, GoogleApiClient> sInstanceMap = new HashMap<>();
+  private static Map<ExperienceKey, GoogleApiClient> sInstanceMap = new HashMap<>();
 
   public PedometerModule(ReactApplicationContext context) {
     super(context);
@@ -64,8 +65,8 @@ public class PedometerModule extends ReactContextBaseJavaModule implements Lifec
 
   public void assertApiClient() {
     if (mClient == null) {
-      if (sInstanceMap.get(getExperienceId()) != null) {
-        mClient = sInstanceMap.get(getExperienceId());
+      if (sInstanceMap.get(getExperienceKey()) != null) {
+        mClient = sInstanceMap.get(getExperienceKey());
         return;
       }
       final FragmentActivity activity = (FragmentActivity) getCurrentActivity();
@@ -93,7 +94,7 @@ public class PedometerModule extends ReactContextBaseJavaModule implements Lifec
           })
           .build();
 
-      sInstanceMap.put(getExperienceId(), mClient);
+      sInstanceMap.put(getExperienceKey(), mClient);
 
       Fitness.RecordingApi.subscribe(mClient, DataType.TYPE_STEP_COUNT_DELTA)
           .setResultCallback(new ResultCallback<Status>() {
@@ -212,13 +213,13 @@ public class PedometerModule extends ReactContextBaseJavaModule implements Lifec
 
   @Override
   public void onHostDestroy() {
-    sInstanceMap.remove(getExperienceId());
+    sInstanceMap.remove(getExperienceKey());
   }
 
-  private String getExperienceId() {
+  private ExperienceKey getExperienceKey() {
     try {
       ExperienceActivity activity = (ExperienceActivity) getCurrentActivity();
-      return activity != null ? activity.getLegacyExperienceId() : null;
+      return activity != null ? activity.getExperienceKey() : null;
     } catch (ClassCastException e) {
       return null;
     }

@@ -49,7 +49,7 @@ import host.exp.exponent.RNObject;
 import host.exp.exponent.analytics.Analytics;
 import host.exp.exponent.analytics.EXL;
 import host.exp.exponent.di.NativeModuleDepsProvider;
-import host.exp.exponent.kernel.ExperienceId;
+import host.exp.exponent.kernel.ExperienceKey;
 import host.exp.exponent.kernel.ExponentError;
 import host.exp.exponent.kernel.ExponentErrorMessage;
 import host.exp.exponent.kernel.KernelConstants;
@@ -109,10 +109,7 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
   protected boolean mIsCrashed = false;
 
   protected String mManifestUrl;
-  protected String mLegacyExperienceIdString;
-  protected String mStableLegacyExperienceIdString;
-  protected ExperienceId mLegacyExperienceId;
-  protected ExperienceId mStableLegacyExperienceId;
+  protected ExperienceKey mExperienceKey;
   @Nullable protected String mSDKVersion;
   protected int mActivityId;
 
@@ -269,7 +266,7 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
         EXL.e(TAG, e);
       }
 
-      ErrorRecoveryManager.getInstance(mLegacyExperienceId).markExperienceLoaded();
+      ErrorRecoveryManager.getInstance(mExperienceKey).markExperienceLoaded();
       pollForEventsToSendToRN();
       EventBus.getDefault().post(new ExperienceDoneLoadingEvent(this));
       mIsLoading = false;
@@ -478,7 +475,7 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
       EXL.e(TAG, e);
     }
 
-    JSONObject metadata = mExponentSharedPreferences.getExperienceMetadata(mStableLegacyExperienceIdString);
+    JSONObject metadata = mExponentSharedPreferences.getExperienceMetadata(mExperienceKey);
     if (metadata != null) {
       // TODO: fix this. this is the only place that EXPERIENCE_METADATA_UNREAD_REMOTE_NOTIFICATIONS is sent to the experience,
       // we need to sent them with the standard notification events so that you can get all the unread notification through an event
@@ -494,7 +491,7 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
         metadata.remove(ExponentSharedPreferences.EXPERIENCE_METADATA_UNREAD_REMOTE_NOTIFICATIONS);
       }
 
-      mExponentSharedPreferences.updateExperienceMetadata(mStableLegacyExperienceIdString, metadata);
+      mExponentSharedPreferences.updateExperienceMetadata(mExperienceKey, metadata);
     }
 
     try {
@@ -534,7 +531,7 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
       return true;
     }
 
-    ErrorRecoveryManager errorRecoveryManager = ErrorRecoveryManager.getInstance(mLegacyExperienceId);
+    ErrorRecoveryManager errorRecoveryManager = ErrorRecoveryManager.getInstance(mExperienceKey);
 
     errorRecoveryManager.markErrored();
 
@@ -612,7 +609,7 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
   public void requestPermissions(final String[] permissions, final int requestCode, final PermissionListener listener) {
     if (requestCode == EXPONENT_PERMISSIONS_REQUEST) {
       @Nullable String name = mManifest.getName();
-      mScopedPermissionsRequester = new ScopedPermissionsRequester(mStableLegacyExperienceId);
+      mScopedPermissionsRequester = new ScopedPermissionsRequester(mExperienceKey);
       mScopedPermissionsRequester.requestPermissions(this, name != null ? name : "", permissions, listener);
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       super.requestPermissions(permissions, requestCode);
@@ -637,7 +634,7 @@ public abstract class ReactNativeActivity extends AppCompatActivity implements c
   @Override
   public int checkPermission(final String permission, final int pid, final int uid) {
     int globalResult = super.checkPermission(permission, pid, uid);
-    return mExpoKernelServiceRegistry.getPermissionsKernelService().getPermissions(globalResult, getPackageManager(), permission, mStableLegacyExperienceId);
+    return mExpoKernelServiceRegistry.getPermissionsKernelService().getPermissions(globalResult, getPackageManager(), permission, mExperienceKey);
   }
 
   public RNObject getDevSupportManager() {

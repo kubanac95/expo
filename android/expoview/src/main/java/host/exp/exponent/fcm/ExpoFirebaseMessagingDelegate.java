@@ -17,7 +17,7 @@ import expo.modules.notifications.service.delegates.FirebaseMessagingDelegate;
 import host.exp.exponent.ABIVersion;
 import host.exp.exponent.Constants;
 import host.exp.exponent.analytics.EXL;
-import host.exp.exponent.kernel.ExperienceId;
+import host.exp.exponent.kernel.ExperienceKey;
 import host.exp.exponent.notifications.PushNotificationHelper;
 import host.exp.exponent.notifications.model.ScopedNotificationRequest;
 import host.exp.exponent.storage.ExperienceDBObject;
@@ -92,14 +92,8 @@ public class ExpoFirebaseMessagingDelegate extends FirebaseMessagingDelegate {
     if (Constants.isStandaloneApp()) {
       return super.createNotificationRequest(identifier, content, notificationTrigger);
     }
-    ExperienceId experienceId;
     Map<String, String> data = notificationTrigger.getRemoteMessage().getData();
-    if (!data.containsKey("experienceId")) {
-      experienceId = null;
-    } else {
-      experienceId = ExperienceId.create(data.get("experienceId"));
-    }
-    String experienceIdString = experienceId == null ? null : experienceId.get();
+    String experienceIdString = data.containsKey("experienceId") ? data.get("experienceId") : null;
     return new ScopedNotificationRequest(identifier, content, notificationTrigger, experienceIdString);
   }
 }

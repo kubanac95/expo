@@ -20,8 +20,8 @@ import host.exp.exponent.kernel.KernelProvider;
 @ReactModule(name = ExponentAsyncStorageModule.NAME, canOverrideExistingModule = true)
 public class ExponentAsyncStorageModule extends AsyncStorageModule {
 
-  public static String experienceIdToDatabaseName(String experienceId) throws UnsupportedEncodingException {
-    String experienceIdEncoded = URLEncoder.encode(experienceId, "UTF-8");
+  public static String experienceScopeKeyToDatabaseName(String experienceScopeKey) throws UnsupportedEncodingException {
+    String experienceIdEncoded = URLEncoder.encode(experienceScopeKey, "UTF-8");
     return "RKStorage-scoped-experience-" + experienceIdEncoded;
   }
 
@@ -29,8 +29,8 @@ public class ExponentAsyncStorageModule extends AsyncStorageModule {
     super(reactContext);
 
     try {
-      String experienceId = manifest.getStableLegacyID();
-      String databaseName = experienceIdToDatabaseName(experienceId);
+      String experienceScopeKey = manifest.getScopeKey();
+      String databaseName = experienceScopeKeyToDatabaseName(experienceScopeKey);
       mReactDatabaseSupplier = new ReactDatabaseSupplier(reactContext, databaseName);
     } catch (JSONException e) {
       KernelProvider.getInstance().handleError("Requires Experience Id");

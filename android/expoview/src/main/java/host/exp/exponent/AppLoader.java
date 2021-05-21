@@ -14,6 +14,7 @@ import host.exp.exponent.analytics.Analytics;
 import host.exp.exponent.analytics.EXL;
 import host.exp.exponent.di.NativeModuleDepsProvider;
 import host.exp.exponent.exceptions.ExceptionUtils;
+import host.exp.exponent.kernel.ExperienceKey;
 import host.exp.exponent.kernel.ExponentUrls;
 import host.exp.exponent.storage.ExponentDB;
 import host.exp.exponent.storage.ExponentSharedPreferences;
@@ -116,8 +117,8 @@ public abstract class AppLoader {
 
           // if previous run of this app failed due to a loading error, set shouldCheckForUpdate to true regardless
           // TODO(wschurman): audit ID usage for new manifests
-          String experienceId = mCachedManifest.getLegacyID();
-          JSONObject experienceMetadata = mExponentSharedPreferences.getExperienceMetadata(experienceId);
+          ExperienceKey experienceKey = ExperienceKey.Companion.fromRawManifest(mCachedManifest);
+          JSONObject experienceMetadata = mExponentSharedPreferences.getExperienceMetadata(experienceKey);
           if (experienceMetadata != null && experienceMetadata.optBoolean(ExponentSharedPreferences.EXPERIENCE_METADATA_LOADING_ERROR)) {
             shouldCheckForUpdate = true;
           }
